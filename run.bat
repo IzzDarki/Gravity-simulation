@@ -1,1 +1,2 @@
-call python main.py
+call py src/main.py
+pause

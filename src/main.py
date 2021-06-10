@@ -1,5 +1,8 @@
 import pygame
 
-print ("Starting gravity simulation")
+from app import App
 
-input("Press any key to exit")
+print("Starting gravity simulation")
+
+app = App()
+app.run()
