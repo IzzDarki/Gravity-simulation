@@ -20,7 +20,7 @@
 
 ## Controls
 - **Mouse wheel**: Zoom in and out according to cursor position
-- **Mouse click on body**: Fix the view to that body
+- **Mouse click on body**: Lock the view to that body
 - **Ctrl + Space**: Pause and resume
 - **Ctrl + Plus**: Speed up time
 - **Ctrl + Minus**: Slow down time
