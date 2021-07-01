@@ -29,7 +29,7 @@
 - **Ctrl + Shift + Plus**: Increase the size of the drawn forces
 - **Ctrl + Shift + Minus**: Decrease the size of the drawn forces
 - **Ctrl + d**: Replace sun with 2 suns
-- **Ctrl + m**: Fix view to earth' moon
+- **Ctrl + m**: Lock view to earth' moon
 
 ## Fact check
 | Value         		| Reality		| Simulation	|
