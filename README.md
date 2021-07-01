@@ -11,7 +11,10 @@
 	`$ pip install pygame` (all users, requires root privileges)
 
 ## Run
-- Run `main.py` 
+- Run `src/main.py` with python
+
+	`$ python src/main.py`
+
 - Optionally use the `run.bat` batch file to run the program
 - `CMD.bat` can be used to access the command line
 
