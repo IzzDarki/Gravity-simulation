@@ -1,103 +1,182 @@
-import pygame
-import imgui
 import math
-import random
 from datetime import datetime
+
+from pygame import color
+from dynamic_background import DynamicBackground
+
+import pygame
 
 from utility import *
 from body import Body
+from dynamic_background import DynamicBackground
 
 class App:
 	GRAVITATIONAL_CONSTANT = 6.67384e-20 # for calculating force in kg * km / s^2
-	ZOOM_STEP = 1.1
+	ZOOM_STEP = 1.03
+	TIME_STEP = 1.3
+
+
+	# init
 
 	def __init__(self):
 		self.running = True
 		self.last_micros = 0
 		
-		self.window_width = 1080 # size of the window
-		self.window_height = 720
+		self.window_width = 720 # size of the window
+		self.window_height = 600
 		self.view_width = 350_000_000 # size of the model
 		self.view_start_x = -self.view_width / 2 # x-position (in the model) at the left edge of the window
 		self.view_start_y = self.view_start_x * self.window_height / self.window_width
 		self.fixed_body: Body = None # if this is a body, then the view always changes, so that the body is in a fixed place
+		
+		self.background = DynamicBackground(self.view_width, self.view_start_x, self.view_start_y, self.window_width / self.window_height, self.pos_to_screen_pos)
+		self.init_model()
 
-		self.generate_background_stars()
-
-		# model
-		sun = Body(
-			name = "sun",
-			mass = 1.989e30,
-			pos_x = 0, pos_y = 0,
-			velocity_x = 0, velocity_y = 0,
-			pos_to_screen_pos = self.pos_to_screen_pos,
-			color = ORANGE,
-			draw_radius = 50)
-
-		sun1 = Body(
-			name = "sun1",
-			mass = 9.945e29,
-			pos_x = 24_500_000, pos_y = 0,
-			velocity_x = 0, velocity_y = -21_248.66363,
-			pos_to_screen_pos = self.pos_to_screen_pos,
-			color = ORANGE,
-			draw_radius = 30)
-
-		sun2 = Body(
-			name = "sun2",
-			mass = 9.945e29,
-			pos_x = -24_500_000, pos_y = 0,
-			velocity_x = 0, velocity_y = 21_248.66363,
-			pos_to_screen_pos = self.pos_to_screen_pos,
-			color = ORANGE,
-			draw_radius = 30)
-
-		earth = Body(
-			name = "earth",
-			mass = 5.972e24,
-			pos_x = -147_090_000, pos_y = 0,
-			velocity_x = 0, velocity_y = -30_000,
-			pos_to_screen_pos = self.pos_to_screen_pos,
-			color = BLUE,
-			draw_radius = 14,
-			draw_resulting_force =False,
-			draw_other_forces = False)
-
-		earth2 = Body(
-			name = "earth2",
-			mass = 5.972e24,
-			pos_x = 0, pos_y = -147_090_000,
-			velocity_x = 20_000, velocity_y = 0,
-			pos_to_screen_pos = self.pos_to_screen_pos,
-			color = BLUE,
-			draw_radius = 5)
-
-		moon = Body(
-			name = "moon",
-			mass = 7.346e22,
-			pos_x = earth.pos_x - 384_000, pos_y = 0,
-			velocity_x = 0, velocity_y = earth.velocity_y - 1_023,
-			pos_to_screen_pos = self.pos_to_screen_pos,
-			color = GREY,
-			draw_radius = 5
-		)
-
-		self.bodies = [earth, moon, sun1, sun2]
+		self.time_factor = 1_577_847 # time needs to pass faster (1 year = 20s)
+		self.paused = False
 
 		# init pygame
 		pygame.init()
 		self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.RESIZABLE) # Create a window surface
 		pygame.display.set_caption("Gravity simulation")
 
+	def init_model(self):
+		self.sun = Body(
+			name = "sun",
+			mass = 1.989e30,
+			pos_x = 0, pos_y = 0,
+			velocity_x = 0, velocity_y = 0,
+			draw_radius = 25,
+			color = ORANGE,
+			pos_to_screen_pos = self.pos_to_screen_pos,
+		)
+
+		self.sun1 = Body(
+			name = "sun1",
+			mass = 9.945e29,
+			pos_x = 24_500_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -21_248.66363,
+			draw_radius = 20,
+			color = ORANGE,
+			pos_to_screen_pos = self.pos_to_screen_pos,
+		)
+
+		self.sun2 = Body(
+			name = "sun2",
+			mass = 9.945e29,
+			pos_x = -24_500_000, pos_y = 0,
+			velocity_x = 0, velocity_y = 21_248.66363,
+			draw_radius = 20,
+			color = ORANGE,
+			pos_to_screen_pos = self.pos_to_screen_pos,
+		)
+
+		mercury = Body(
+			name = "mercury",
+			mass = 3.285e23,
+			pos_x = -69_817_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -38_860,
+			draw_radius = 10,
+			color = (188, 167, 116),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		venus = Body(
+			name = "venus",
+			mass = 4.8675e24,
+			pos_x = -108_939_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -34_790,
+			draw_radius = 10,
+			color = (171, 105, 61),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		earth = Body(
+			name = "earth",
+			mass = 5.9724e24,
+			pos_x = -152_099_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -29_290,
+			draw_radius = 13,
+			color = BLUE,
+			pos_to_screen_pos = self.pos_to_screen_pos,
+		)
+
+		self.moon = Body(
+			name = "moon",
+			mass = 7.346e22,
+			pos_x = earth.pos_x - 363_300, pos_y = 0,
+			velocity_x = 0, velocity_y = earth.velocity_y - 970,
+			draw_radius = 6,
+			color = GREY,
+			pos_to_screen_pos = self.pos_to_screen_pos,
+		)
+
+		mars = Body(
+			name = "mars",
+			mass = 6.4171e23,
+			pos_x = -249_229_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -21_970,
+			draw_radius = 10,
+			color = (220, 59, 36),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		jupiter = Body(
+			name = "jupiter",
+			mass = 1898.19e24,
+			pos_x = -816_618_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -12_440,
+			draw_radius = 15,
+			color = (184, 135, 125),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		saturn = Body(
+			name = "saturn",
+			mass = 568.34e24,
+			pos_x = -1_514_504_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -9_090,
+			draw_radius = 11,
+			color = (206, 177, 121),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		uranus = Body(
+			name = "uranus",
+			mass = 86.813e24,
+			pos_x = -3_003_625_000, pos_y = 0,
+			velocity_x = 0, velocity_y = -6_490,
+			draw_radius = 10,
+			color = (0, 162, 252),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		neptune = Body(
+			name = "neptune",
+			mass = 102.413e24,
+			pos_x = -4_545_671_000, pos_y = 0,
+			velocity_x = 0, velocity_y = - 5_370,
+			draw_radius = 10,
+			color = (46, 62, 159),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		pluto = Body(
+			name = "pluto",
+			mass = 1.303e22,
+			pos_x = -7_304_326_000, pos_y = 0,
+			velocity_x = 0, velocity_y = - 3_710,
+			draw_radius = 7,
+			color = (149, 151, 163),
+			pos_to_screen_pos = self.pos_to_screen_pos
+		)
+
+		self.bodies = [pluto, neptune, uranus, saturn, jupiter, mars, self.moon, earth, venus, mercury, self.sun]
+
 
 	# game
 
 	def run(self):
-		# initilize imgui context (see documentation)
-		imgui.create_context()
-		imgui.get_io().display_size = 100, 100
-		imgui.get_io().fonts.get_tex_data_as_rgba32()
-		
 		while self.running:
 
 			# calculate delta time of last frame
@@ -108,12 +187,14 @@ class App:
 			for event in pygame.event.get():
 				self.handle_event(event)
 
-			self.update(delta)
+			if not self.paused:
+				self.update(delta)
+
 			self.render()
 
 			pygame.display.flip()
 			#print("FPS: ", (1000 / delta) if (delta > 0) else "infinite")
-	
+
 	def update(self, delta):
 		# save the distance between fixed body and start values of the view
 		if self.fixed_body is not None:
@@ -126,22 +207,22 @@ class App:
 
 		# update bodies
 		for body in self.bodies:
-			body.update(delta)
+			body.update(delta * self.time_factor)
 
-		# update the view
+		# update the view for fixed body
 		if self.fixed_body is not None:
 			self.view_start_x += self.fixed_body.pos_x - last_pos_x
-			self.view_start_y += (self.fixed_body.pos_y - last_pos_y) * self.window_width / self.window_height
+			self.view_start_y += self.fixed_body.pos_y - last_pos_y
+			self.background.change_view_starts(self.view_start_x, self.view_start_y)
 
 	def render(self):
+		# reset the screen to black
 		self.screen.fill(BLACK)
 
 		# draw background
-		for star in self.background_stars:
-			pygame.draw.circle(self.screen, (star[2], star[2], star[2]), self.pos_to_screen_pos(star[0], star[1]), star[3])
+		self.background.draw(self.screen)
 
-		#pygame.draw.line(self.screen, (200, 0, 100), (self.window_width / 2, 0), (self.window_width / 2, self.window_height)) # cross
-		#pygame.draw.line(self.screen, (200, 0, 100), (0, self.window_height / 2), (self.window_width, self.window_height / 2))
+		# draw all bodies
 		for body in self.bodies:
 			body.draw(self.screen)
 
@@ -170,19 +251,56 @@ class App:
 
 		# window resize
 		elif event.type == pygame.VIDEORESIZE:
-			self.view_start_x += (0.5 * self.view_width * (1.0 / self.window_width - 1.0 / event.w))
-			self.view_start_y = (event.w / event.h) * ((self.view_width * (0.5 * self.window_height + 0.5) + self.view_start_y * self.window_height) / self.window_width) - (0.5 * self.view_width * (1.0 + 1.0 / event.h))
+			self.window_resize(event.w, event.h)
 
-			self.window_width = event.w
-			self.window_height = event.h
+		# keys
+		elif event.type == pygame.KEYDOWN:
+			# Ctrl + Plus
+			if (event.key == pygame.K_PLUS or event.key == pygame.K_KP_PLUS) and pygame.key.get_mods() & pygame.K_LCTRL:
+				self.time_factor *= App.TIME_STEP
+			# Ctrl + Minus
+			elif (event.key == pygame.K_MINUS or event.key == pygame.K_KP_MINUS) and pygame.key.get_mods() & pygame.K_LCTRL:
+				self.time_factor /= App.TIME_STEP
+			# Ctrl + Space
+			elif event.key == pygame.K_SPACE and pygame.key.get_mods() & pygame.K_LCTRL:
+				self.paused = not self.paused
+			# Ctrl + d
+			elif event.key == pygame.K_d and pygame.key.get_mods() & pygame.K_LCTRL:
+				if self.sun in self.bodies:
+					self.bodies.remove(self.sun)
+					self.bodies.append(self.sun1)
+					self.bodies.append(self.sun2)
+				else:
+					self.bodies.remove(self.sun1)
+					self.bodies.remove(self.sun2)
+					self.bodies.append(self.sun)
+			# Ctrl + m
+			elif event.key == pygame.K_m and pygame.key.get_mods() & pygame.K_LCTRL:
+				if self.fixed_body is not self.moon:
+					self.fixed_body = self.moon
+				else:
+					self.fixed_body = None
 
 	def mouse_clicked(self, mouse_x, mouse_y):
-		for body in self.bodies:
+		for body in reversed(self.bodies):
 			if self.is_click_on_body(body, mouse_x, mouse_y):
 				self.fixed_body = body
-				print("Clicked", self.fixed_body.name)
 				return
 		self.fixed_body = None
+
+	def window_resize(self, new_width, new_height):
+		self.view_start_x += 0.5 * self.view_width * (1.0 / self.window_width - 1.0 / new_width) # the pixel (with / 2, _) will correspond to the same position in the model before and after window resize (is almost the same as having the pixel (0, _) => is almost the same as doing nothing)
+		self.view_start_y += 0.5 * self.view_width * ((self.window_height + 1.0) / self.window_width - (new_height + 1.0) / new_width) # the pixel (_, height / 2) will correspond to the same position in the model before and after window resize 
+
+		self.window_width = new_width
+		self.window_height = new_height
+
+		# regenerate background (TODO implement other solution)
+		self.background.view_start_x = self.view_start_x
+		self.background.view_start_y = self.view_start_y
+		self.background.screen_ratio = self.window_width / self.window_height
+		self.background.stars = []
+		self.background.generate()
 
 
 	# utility
@@ -217,53 +335,43 @@ class App:
 	def zoom_in(self):
 		self.zoom(1 / App.ZOOM_STEP)
 
+		# update background
+		self.background.zoom_in(self.view_width, self.view_start_x, self.view_start_y)
+
 	def zoom_out(self):
 		self.zoom(App.ZOOM_STEP)
+
+		# update background
+		self.rects = self.background.zoom_out(self.view_width, self.view_start_x, self.view_start_y)
 
 	def zoom(self, zoom_factor):
 		# change the start values, so that the position where the mouse cursor is stayes the same after zoom
 		(mouse_x, mouse_y) = pygame.mouse.get_pos()
 		self.view_start_x += (1.0 - zoom_factor) * (mouse_x / self.window_width) * self.view_width
-		self.view_start_y += (1.0 - zoom_factor) * (mouse_y / self.window_height) * self.view_width
+		self.view_start_y += (1.0 - zoom_factor) * (mouse_y / self.window_width) * self.view_width
 
 		# change width of the view = zoom
 		self.view_width *= zoom_factor
 
+	def length_to_screen_length(self, length):
+		return length * self.window_width / self.view_width
+
 	def pos_to_screen_pos(self, pos_x, pos_y):
 		screen_x = (pos_x - self.view_start_x) * self.window_width / self.view_width - 0.5
-		screen_y = (pos_y * self.window_width - self.view_start_y * self.window_height) / self.view_width - 0.5
+		screen_y = (pos_y - self.view_start_y) * self.window_width / self.view_width - 0.5
 
 		return (screen_x, screen_y)
 
-	#def screen_pos_to_pos(self, screen_x, screen_y):
-	#	pos_x = self.view_width * (screen_x + 0.5) / self.window_width + self.view_start_x
-	#	pos_y = (self.view_width * (screen_y + 0.5) + self.view_start_y * self.window_height) / self.window_width
-	#	return (pos_x, pos_y)
+	def screen_pos_to_pos(self, screen_x, screen_y):
+		pos_x = self.view_width * (screen_x + 0.5) / self.window_width + self.view_start_x
+		pos_y = self.view_width * (screen_y + 0.5) / self.window_width + self.view_start_y
+		return (pos_x, pos_y)
 
 	def is_click_on_body(self, body: Body, click_screen_x, click_screen_y):
 		(body_screen_x, body_screen_y) = self.pos_to_screen_pos(body.pos_x, body.pos_y)
 		screen_distance_squared = (body_screen_x - click_screen_x) ** 2 + (body_screen_y - click_screen_y) ** 2
 
 		return (screen_distance_squared <= body.draw_radius ** 2)
-
-	# TODO when zooming and resizing the background has to be changed
-	def generate_background_stars(self):
-		self.background_stars = []
-
-		for i in range(0, random.randint(700, 1500)):
-			pos_x = random.randint(int(self.view_start_x), int(self.view_start_x) + int(self.view_width))
-			pos_y = random.randint(int(self.view_start_y), int(self.view_start_y) + int(self.view_width * (self.window_height / self.window_width)))
-			brightness = random.randint(100, 255)
-
-			if random.randint(0, 30) == 0:
-				draw_radius = 3
-			elif random.randint(0, 5) == 0:
-				draw_radius = 2
-			else:
-				draw_radius = 1
-
-			self.background_stars.append((pos_x, pos_y, brightness, draw_radius))
-
 
 	def calc_delta(self):
 		micros = datetime.now().microsecond

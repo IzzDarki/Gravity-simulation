@@ -1,5 +1,3 @@
-import pygame
-
 from app import App
 
 print("Starting gravity simulation")
