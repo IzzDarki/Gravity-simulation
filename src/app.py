@@ -1,10 +1,8 @@
 import math
 from datetime import datetime
 
-from pygame import color
-from dynamic_background import DynamicBackground
-
 import pygame
+from pygame.constants import KMOD_LCTRL
 
 from utility import *
 from body import Body
@@ -14,6 +12,7 @@ class App:
 	GRAVITATIONAL_CONSTANT = 6.67384e-20 # for calculating force in kg * km / s^2
 	ZOOM_STEP = 1.03
 	TIME_STEP = 1.3
+	DRAW_FORCES_STEP = 1.2
 
 
 	# init
@@ -31,6 +30,8 @@ class App:
 		
 		self.background = DynamicBackground(self.view_width, self.view_start_x, self.view_start_y, self.window_width / self.window_height, self.pos_to_screen_pos)
 		self.init_model()
+		self.draw_forces = False
+		self.draw_forces_factor = 1.0
 
 		self.time_factor = 1_577_847 # time needs to pass faster (1 year = 20s)
 		self.paused = False
@@ -224,7 +225,7 @@ class App:
 
 		# draw all bodies
 		for body in self.bodies:
-			body.draw(self.screen)
+			body.draw(self.screen, self.draw_forces_factor if self.draw_forces else 0)
 
 
 	# input
@@ -255,17 +256,36 @@ class App:
 
 		# keys
 		elif event.type == pygame.KEYDOWN:
+			self.key_down(event.key, event.mod)
+
+	def key_down(self, key, mod):
+			# Ctrl + alt + Plus
+			if (key == pygame.K_PLUS or key == pygame.K_KP_PLUS) and (mod & pygame.KMOD_LCTRL) and (mod & pygame.KMOD_LSHIFT) and self.draw_forces:
+				self.draw_forces_factor *= App.DRAW_FORCES_STEP
+				print("hi")
+
+			# Ctrl + alt + Minus
+			elif (key == pygame.K_MINUS or key == pygame.K_KP_MINUS) and (mod & pygame.KMOD_LCTRL) and (mod & pygame.KMOD_LSHIFT) and self.draw_forces:
+				self.draw_forces_factor /= App.DRAW_FORCES_STEP
+
 			# Ctrl + Plus
-			if (event.key == pygame.K_PLUS or event.key == pygame.K_KP_PLUS) and pygame.key.get_mods() & pygame.K_LCTRL:
+			elif (key == pygame.K_PLUS or key == pygame.K_KP_PLUS) and (mod & pygame.KMOD_LCTRL):
 				self.time_factor *= App.TIME_STEP
+
 			# Ctrl + Minus
-			elif (event.key == pygame.K_MINUS or event.key == pygame.K_KP_MINUS) and pygame.key.get_mods() & pygame.K_LCTRL:
+			elif (key == pygame.K_MINUS or key == pygame.K_KP_MINUS) and (mod & pygame.KMOD_LCTRL):
 				self.time_factor /= App.TIME_STEP
+
 			# Ctrl + Space
-			elif event.key == pygame.K_SPACE and pygame.key.get_mods() & pygame.K_LCTRL:
+			elif key == pygame.K_SPACE and (mod & pygame.KMOD_LCTRL):
 				self.paused = not self.paused
+
+			# Ctrl + f
+			elif key == pygame.K_f and (mod & pygame.KMOD_LCTRL):
+				self.draw_forces = not self.draw_forces
+
 			# Ctrl + d
-			elif event.key == pygame.K_d and pygame.key.get_mods() & pygame.K_LCTRL:
+			elif key == pygame.K_d and (mod & pygame.KMOD_LCTRL):
 				if self.sun in self.bodies:
 					self.bodies.remove(self.sun)
 					self.bodies.append(self.sun1)
@@ -274,12 +294,17 @@ class App:
 					self.bodies.remove(self.sun1)
 					self.bodies.remove(self.sun2)
 					self.bodies.append(self.sun)
+
 			# Ctrl + m
-			elif event.key == pygame.K_m and pygame.key.get_mods() & pygame.K_LCTRL:
+			elif key == pygame.K_m and (mod & pygame.KMOD_LCTRL):
 				if self.fixed_body is not self.moon:
 					self.fixed_body = self.moon
 				else:
 					self.fixed_body = None
+
+			# Ctrl + Escape
+			elif key == pygame.K_ESCAPE and (mod & pygame.KMOD_LCTRL):
+				self.running = False
 
 	def mouse_clicked(self, mouse_x, mouse_y):
 		for body in reversed(self.bodies):
@@ -386,3 +411,9 @@ class App:
 			delta += 999999 # overflow
 
 		return delta / 1000.0 # delta in ms
+
+	def is_key_pressed(key) -> bool:
+		return pygame.key.get_mods() & key
+
+	def is_left_ctrl_pressed() -> bool:
+		return App.is_key_pressed(pygame.K_LCTRL)

@@ -19,11 +19,15 @@
 - `CMD.bat` can be used to access the command line
 
 ## Controls
-- **Ctrl + Space**: Pause and Resume
 - **Mouse wheel**: Zoom in and out according to cursor position
 - **Mouse click on body**: Fix the view to that body
+- **Ctrl + Space**: Pause and resume
 - **Ctrl + Plus**: Speed up time
 - **Ctrl + Minus**: Slow down time
+- **Ctrl + Escape**: Exit
+- **Ctrl + f**: Display forces
+- **Ctrl + Shift + Plus**: Increase the size of the drawn forces
+- **Ctrl + Shift + Minus**: Decrease the size of the drawn forces
 - **Ctrl + d**: Replace sun with 2 suns
 - **Ctrl + m**: Fix view to earth' moon
 
