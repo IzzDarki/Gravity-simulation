@@ -20,7 +20,7 @@
 
 ## Controls
 - **Mouse wheel**: Zoom in and out according to cursor position
-- **Mouse click on body**: Fix the view to that body
+- **Mouse click on body**: Lock the view to that body
 - **Ctrl + Space**: Pause and resume
 - **Ctrl + Plus**: Speed up time
 - **Ctrl + Minus**: Slow down time
@@ -30,7 +30,7 @@
 - **Ctrl + Shift + Minus**: Decrease the size of the drawn forces
 - **Ctrl + b**: Show/hide background
 - **Ctrl + d**: Replace sun with 2 suns
-- **Ctrl + m**: Fix view to earth' moon
+- **Ctrl + m**: Lock view to earth' moon
 
 ## Fact check
 | Value         		| Reality		| Simulation	|
