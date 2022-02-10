@@ -35,6 +35,7 @@ class App:
 
 		self.time_factor = 1_577_847 # time needs to pass faster (1 year = 20s)
 		self.paused = False
+		self.draw_background = True
 
 		# init pygame
 		pygame.init()
@@ -221,7 +222,8 @@ class App:
 		self.screen.fill(BLACK)
 
 		# draw background
-		self.background.draw(self.screen)
+		if (self.draw_background):
+			self.background.draw(self.screen)
 
 		# draw all bodies
 		for body in self.bodies:
@@ -256,13 +258,12 @@ class App:
 
 		# keys
 		elif event.type == pygame.KEYDOWN:
-			self.key_down(event.key, event.mod)
+			self.handle_key_down(event.key, event.mod)
 
-	def key_down(self, key, mod):
+	def handle_key_down(self, key, mod):
 			# Ctrl + alt + Plus
 			if (key == pygame.K_PLUS or key == pygame.K_KP_PLUS) and (mod & pygame.KMOD_LCTRL) and (mod & pygame.KMOD_LSHIFT) and self.draw_forces:
 				self.draw_forces_factor *= App.DRAW_FORCES_STEP
-				print("hi")
 
 			# Ctrl + alt + Minus
 			elif (key == pygame.K_MINUS or key == pygame.K_KP_MINUS) and (mod & pygame.KMOD_LCTRL) and (mod & pygame.KMOD_LSHIFT) and self.draw_forces:
@@ -283,6 +284,10 @@ class App:
 			# Ctrl + f
 			elif key == pygame.K_f and (mod & pygame.KMOD_LCTRL):
 				self.draw_forces = not self.draw_forces
+
+			# Ctrl + b
+			elif key == pygame.K_b and (mod & pygame.KMOD_LCTRL):
+				self.draw_background = not self.draw_background
 
 			# Ctrl + d
 			elif key == pygame.K_d and (mod & pygame.KMOD_LCTRL):

@@ -28,6 +28,7 @@
 - **Ctrl + f**: Display forces
 - **Ctrl + Shift + Plus**: Increase the size of the drawn forces
 - **Ctrl + Shift + Minus**: Decrease the size of the drawn forces
+- **Ctrl + b**: Show/hide background
 - **Ctrl + d**: Replace sun with 2 suns
 - **Ctrl + m**: Fix view to earth' moon
 
